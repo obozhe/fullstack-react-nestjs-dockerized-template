@@ -1,0 +1,36 @@
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: template-web
+      dockerfile: Dockerfile
+    ports:
+      - 8080:80
+    depends_on:
+      core:
+        condition: service_healthy
+    networks:
+      - shared-network
+    environment:
+      - API_HOST=http://core:3000
+
+  core:
+    container_name: core
+    env_file: 'template-core/.env'
+    build:
+      context: template-core
+      target: production
+      dockerfile: Dockerfile
+    networks:
+      - shared-network
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "http://core:3000/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+networks:
+  shared-network:
